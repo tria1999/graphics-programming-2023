@@ -101,15 +101,15 @@ void ImGuiSceneVisitor::VisitTransform(Transform& transform)
     glm::vec3 rotation = transform.GetRotation();
     glm::vec3 scale = transform.GetScale();
 
-    if (ImGui::DragFloat3("Translation", &translation[0], 0.1f))
+    if (ImGui::DragFloat3("Translation", &translation[0], 0.01f))
     {
         transform.SetTranslation(translation);
     }
-    if (ImGui::DragFloat3("Rotation", &rotation[0], 0.1f))
+    if (ImGui::DragFloat3("Rotation", &rotation[0], 0.01f))
     {
         transform.SetRotation(rotation);
     }
-    if (ImGui::DragFloat3("Scale", &scale[0], 0.1f, 0.0f, 100000.0f))
+    if (ImGui::DragFloat3("Scale", &scale[0], 0.001f, 0.0f, 100000.0f))
     {
         transform.SetScale(scale);
     }
