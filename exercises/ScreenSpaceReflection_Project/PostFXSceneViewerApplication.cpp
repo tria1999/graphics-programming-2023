@@ -6,6 +6,7 @@
 
 #include <ituGL/camera/Camera.h>
 #include <ituGL/scene/SceneCamera.h>
+#include <ituGL/scene/Transform.h>
 
 #include <ituGL/lighting/DirectionalLight.h>
 #include <ituGL/lighting/PointLight.h>
@@ -66,7 +67,6 @@ void PostFXSceneViewerApplication::Update()
     RendererSceneVisitor rendererSceneVisitor(m_renderer);
     m_scene.AcceptVisitor(rendererSceneVisitor);
 }
-
 void PostFXSceneViewerApplication::Render()
 {
     Application::Render();
@@ -264,10 +264,12 @@ void PostFXSceneViewerApplication::InitializeModels()
     m_skyboxTexture->GetParameter(TextureObject::ParameterFloat::MaxLod, maxLod);
     TextureCubemapObject::Unbind();
 
+    
     // Set the environment texture on the deferred material
     m_deferredMaterial->SetUniformValue("EnvironmentTexture", m_skyboxTexture);
     m_deferredMaterial->SetUniformValue("EnvironmentMaxLod", maxLod);
 
+    m_house_brick_texture = Texture2DLoader::LoadTextureShared("models/house/house_brick.jpg", TextureObject::FormatRGB, TextureObject::InternalFormatRGB16F);
     // Configure loader
     ModelLoader loader(m_defaultMaterial);
 
@@ -291,8 +293,39 @@ void PostFXSceneViewerApplication::InitializeModels()
     loader.SetMaterialProperty(ModelLoader::MaterialProperty::SpecularTexture, "SpecularTexture");
 
     // Load models
+    
     std::shared_ptr<Model> cannonModel = loader.LoadShared("models/cannon/cannon.obj");
-    m_scene.AddSceneNode(std::make_shared<SceneModel>("cannon", cannonModel));
+    std::shared_ptr<SceneModel> sceneCannonModel = std::make_shared<SceneModel>("cannon", cannonModel);
+    sceneCannonModel->GetTransform()->SetTranslation(glm::vec3(-1.0, -1.0, -1.0));
+    sceneCannonModel->GetTransform()->SetScale(glm::vec3(0.5));
+    m_scene.AddSceneNode(sceneCannonModel);
+
+
+    ModelLoader house_loader(m_defaultMaterial);
+
+    // Create a new material copy for each submaterial
+    house_loader.SetCreateMaterials(true);
+
+    // Flip vertically textures loaded by the model house_loader
+    house_loader.GetTexture2DLoader().SetFlipVertical(true);
+
+    // Link vertex properties to attributes
+    house_loader.SetMaterialAttribute(VertexAttribute::Semantic::Position, "VertexPosition");
+    house_loader.SetMaterialAttribute(VertexAttribute::Semantic::Normal, "VertexNormal");
+    house_loader.SetMaterialAttribute(VertexAttribute::Semantic::Tangent, "VertexTangent");
+    house_loader.SetMaterialAttribute(VertexAttribute::Semantic::Bitangent, "VertexBitangent");
+    house_loader.SetMaterialAttribute(VertexAttribute::Semantic::TexCoord0, "VertexTexCoord");
+
+    // Link material properties to uniforms
+    house_loader.SetMaterialProperty(ModelLoader::MaterialProperty::DiffuseColor, "Color");
+    house_loader.SetMaterialProperty(ModelLoader::MaterialProperty::DiffuseTexture, "ColorTexture");
+    house_loader.SetMaterialProperty(ModelLoader::MaterialProperty::NormalTexture, "NormalTexture");
+    house_loader.SetMaterialProperty(ModelLoader::MaterialProperty::SpecularTexture, "SpecularTexture");
+    std::shared_ptr<Model> houseModel = house_loader.LoadShared("models/house/house.obj");
+    std::shared_ptr<SceneModel> sceneHouseModel = std::make_shared<SceneModel>("house", houseModel);
+    sceneHouseModel->GetTransform()->SetScale(glm::vec3(0.5));
+    m_scene.AddSceneNode(sceneHouseModel);
+    
 }
 
 void PostFXSceneViewerApplication::InitializeFramebuffers()

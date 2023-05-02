@@ -54,7 +54,7 @@ private:
 
     // Skybox texture
     std::shared_ptr<TextureCubemapObject> m_skyboxTexture;
-
+    std::shared_ptr<Texture2DObject> m_house_brick_texture;
     // Main light
     std::shared_ptr<Light> m_mainLight;
 
@@ -64,7 +64,7 @@ private:
     std::shared_ptr<Material> m_shadowMapMaterial;
     std::shared_ptr<Material> m_composeMaterial;
     std::shared_ptr<Material> m_bloomMaterial;
-
+    
     // Framebuffers
     std::shared_ptr<FramebufferObject> m_sceneFramebuffer;
     std::shared_ptr<Texture2DObject> m_depthTexture;
