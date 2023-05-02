@@ -1,7 +1,7 @@
-#include "PostFXSceneViewerApplication.h"
+#include "ViewerApplication.h"
 
 int main()
 {
-    PostFXSceneViewerApplication sceneViewerApplication;
-    return sceneViewerApplication.Run();
+    ViewerApplication viewerApplication;
+    return viewerApplication.Run();
 }
