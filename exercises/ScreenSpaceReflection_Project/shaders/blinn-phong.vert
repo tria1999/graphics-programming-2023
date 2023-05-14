@@ -17,4 +17,5 @@ void main()
 	WorldNormal = normalize((WorldMatrix * vec4(VertexNormal, 0.0)).xyz);
 	TexCoord = VertexTexCoord;
 	gl_Position = ViewProjMatrix * vec4(WorldPosition, 1.0);
+
 }
