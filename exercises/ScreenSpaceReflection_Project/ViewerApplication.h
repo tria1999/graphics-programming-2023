@@ -18,15 +18,18 @@ protected:
     void Initialize() override;
     void Update() override;
     void Render() override;
+    void RenderIntoNormalsFBO();
     void Cleanup() override;
 
 private:
     void InitializeModel();
     void InitializeCamera();
     void CreateWaterMaterial(std::shared_ptr<ShaderProgram> shaderProgram, ShaderUniformCollection::NameSet filteredUniforms);
-    void CreateFramebufferMaterial();
+    void CreateNormalsFramebufferMaterial();
+    void CreateUVCoordsFramebufferMaterial();
     void InitializeLights();
-    void InitializeFrameBufferObject();
+    void InitializeNormalsFBO();
+    void InitializeUVCoordsFBO();
 
     void UpdateCamera();
 
@@ -52,14 +55,19 @@ private:
     Model m_model;
     Model m_waterSurface;
 
-    std::shared_ptr<FramebufferObject> m_fbo;
+    std::shared_ptr<FramebufferObject> m_normalsFBO;
+    std::shared_ptr<FramebufferObject> m_UVCoordsFBO;
+
+
 
     std::shared_ptr<Texture2DObject> m_depthTexture;
     std::shared_ptr<Texture2DObject> m_normalTexture;
+    std::shared_ptr<Texture2DObject> m_uvTexture;
+
 
     std::shared_ptr<Material> m_waterMaterial;
-    std::shared_ptr<Material> m_framebufferMaterial;
-
+    std::shared_ptr<Material> m_normalsMaterial;
+    std::shared_ptr<Material> m_UVCoordsMaterial;
     // Add light variables
     glm::vec3 m_ambientColor;
     glm::vec3 m_lightColor;

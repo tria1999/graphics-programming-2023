@@ -33,7 +33,8 @@ void ViewerApplication::Initialize()
     // Initialize DearImGUI
     m_imGui.Initialize(GetMainWindow());
 
-    InitializeFrameBufferObject();
+    InitializeNormalsFBO();
+    InitializeUVCoordsFBO();
     InitializeModel();
     InitializeCamera();
     InitializeLights();
@@ -54,8 +55,8 @@ void ViewerApplication::Update()
 
     // Update specular exponent for grass material
     m_model.GetMaterial(1).SetUniformValue("SpecularExponent", m_specularExponentGrass);
+    // Pass the time for the wave animation in float form
     m_waterSurface.GetMaterial(0).SetUniformValue("time", (float)glfwGetTime());
-
 }
 
 void ViewerApplication::Render()
@@ -63,38 +64,52 @@ void ViewerApplication::Render()
     Application::Render();
 
     // Clear color and depth
-    GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
+    //GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
 
-    // Pass the time for the wave animation in float form
-    // FIRST PART: RENDERING THE FRAMEBUFFER
-    m_fbo->Bind();
+    
+    RenderIntoNormalsFBO();
 
-    // Clear color and depth. Yes, you also need to clear the textures. Maybe you were missing this part?
-    GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
-
-    // Draw the mill model with a different material that only outputs the normals
-    {
-        // Set up the normals material before rendering
-        m_framebufferMaterial->Use();
-        // Draw all the submeshes, one by one, all with the same material
-        for (unsigned int submeshIndex = 0; submeshIndex < m_model.GetMesh().GetSubmeshCount(); ++submeshIndex)
-        {
-            // Draw the submesh
-            m_model.GetMesh().DrawSubmesh(submeshIndex);
-        }
-    }
-    m_fbo->Unbind();
     // Clear color and depth
     GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
     m_model.Draw();    
 
 
+    //Update the uniforms each frame
+    m_waterSurface.GetMaterial(0).SetUniformValue("DepthTexture",m_depthTexture);
+    m_waterSurface.GetMaterial(0).SetUniformValue("NormalTexture", m_normalTexture);
     m_waterSurface.Draw();
     
     // Render the debug user interface
     RenderGUI();
-    
 }
+
+void ViewerApplication::RenderIntoNormalsFBO()
+{
+    // FIRST PART: RENDERING THE FRAMEBUFFER
+    m_normalsFBO->Bind();
+
+    // Clear color and depth. Yes, you also need to clear the textures. Maybe you were missing this part?
+    GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
+
+    // Draw the mill model with a different material that only outputs the normals
+
+    // Set up the normals material before rendering
+    m_normalsMaterial->Use();
+    // Draw all the submeshes, one by one, all with the same material
+    for (unsigned int submeshIndex = 0; submeshIndex < m_model.GetMesh().GetSubmeshCount(); ++submeshIndex)
+    {
+        // Draw the submesh
+        m_model.GetMesh().DrawSubmesh(submeshIndex);
+    }
+    /*
+    for (unsigned int submeshIndex = 0; submeshIndex < m_waterSurface.GetMesh().GetSubmeshCount(); ++submeshIndex)
+    {
+    // Draw the submesh
+    m_waterSurface.GetMesh().DrawSubmesh(submeshIndex);
+    }*/
+    m_normalsFBO->Unbind();
+}
+
 
 void ViewerApplication::Cleanup()
 {
@@ -109,9 +124,8 @@ void ViewerApplication::InitializeModel()
     // Load and build shader
     Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/blinn-phong.vert");
     Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/blinn-phong.frag");
-    //Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/SSR_let.vert");
-    //Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/SSR_let.frag");
-    //Shader normalShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/normal.frag");
+    //Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/framebuffer.vert");
+    //Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/framebuffer.frag");
     std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
     shaderProgram->Build(vertexShader, fragmentShader);
 
@@ -188,6 +202,8 @@ void ViewerApplication::InitializeModel()
     waterTexture->Unbind();
     */
     m_waterSurface.GetMaterial(0).SetUniformValue("ColorTexture", waterTexture);
+    //m_waterSurface.GetMaterial(0).SetUniformValue("DepthTexture", m_depthTexture);
+    //m_waterSurface.GetMaterial(0).SetUniformValue("NormalTexture", m_normalTexture);
 }
 
 void ViewerApplication::InitializeCamera()
@@ -208,10 +224,9 @@ void ViewerApplication::CreateWaterMaterial(std::shared_ptr<ShaderProgram> shade
     std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
     shaderProgram->Build(vertexShader, fragmentShader);
 
-
     filteredUniforms.insert("ProjMatrix");
     filteredUniforms.insert("InvProjMatrix");
-    //filteredUniforms.insert("PositionTexture");
+    filteredUniforms.insert("InvViewMatrix");
 
     m_waterMaterial = std::make_shared<Material>(shaderProgram, filteredUniforms);
     m_waterMaterial->SetUniformValue("Color", glm::vec4(1.0f));
@@ -220,16 +235,6 @@ void ViewerApplication::CreateWaterMaterial(std::shared_ptr<ShaderProgram> shade
     m_waterMaterial->SetUniformValue("SpecularReflection", 1.0f);
     m_waterMaterial->SetUniformValue("SpecularExponent", 100.0f);
     m_waterMaterial->SetUniformValue("time", 0.0f);
-
-
-    //std::unique_ptr<GBufferRenderPass> gbufferRenderPass(std::make_unique<GBufferRenderPass>(1024, 1024));
-
-    // Set the g-buffer textures as properties of the deferred material
-    //m_waterMaterial->SetUniformValue("DepthTexture", gbufferRenderPass->GetDepthTexture());
-    //m_waterMaterial->SetUniformValue("NormalTexture", gbufferRenderPass->GetNormalTexture());
-
-    // Get the depth texture from the gbuffer pass - This could be reworked
-    //m_depthTexture = gbufferRenderPass->GetDepthTexture();
 
     // Setup function
     ShaderProgram::Location worldMatrixLocation = shaderProgram->GetUniformLocation("WorldMatrix");
@@ -241,11 +246,12 @@ void ViewerApplication::CreateWaterMaterial(std::shared_ptr<ShaderProgram> shade
 
     ShaderProgram::Location projMatrixLocation = shaderProgram->GetUniformLocation("ProjMatrix");
     ShaderProgram::Location invProjMatrixLocation = shaderProgram->GetUniformLocation("InvProjMatrix");
-    ShaderProgram::Location depthTextureLocation = shaderProgram->GetUniformLocation("DepthTexture");
+    ShaderProgram::Location invViewMatrixLocation = shaderProgram->GetUniformLocation("InvViewMatrix");
+    //ShaderProgram::Location depthTextureLocation = shaderProgram->GetUniformLocation("DepthTexture");
 
     m_waterMaterial->SetShaderSetupFunction([=](ShaderProgram& shaderProgram)
         {
-            shaderProgram.SetUniform(worldMatrixLocation, glm::translate(glm::vec3(0.f,2.f,0.f))*glm::scale(glm::vec3(5.f)));
+            shaderProgram.SetUniform(worldMatrixLocation, glm::translate(glm::vec3(0.f,2.f,0.f))*glm::scale(glm::vec3(5.0f)));
             shaderProgram.SetUniform(viewProjMatrixLocation, m_camera.GetViewProjectionMatrix());
             shaderProgram.SetUniform(projMatrixLocation, m_camera.GetProjectionMatrix());
             shaderProgram.SetUniform(invProjMatrixLocation, glm::inverse(m_camera.GetProjectionMatrix()));
@@ -254,29 +260,79 @@ void ViewerApplication::CreateWaterMaterial(std::shared_ptr<ShaderProgram> shade
             shaderProgram.SetUniform(lightColorLocation, m_lightColor * m_lightIntensity);
             shaderProgram.SetUniform(lightPositionLocation, m_lightPosition);
             shaderProgram.SetUniform(cameraPositionLocation, m_cameraPosition);
-            //shaderProgram.SetUniform(depthTextureLocation, &m_depthTexture);
+            shaderProgram.SetUniform(invViewMatrixLocation, glm::inverse(m_camera.GetViewMatrix()));
+            //shaderProgram.SetUniform(depthTextureLocation, *m_depthTexture);
         });
 }
 
-void ViewerApplication::CreateFramebufferMaterial()
+void ViewerApplication::CreateNormalsFramebufferMaterial()
 {
     Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/framebuffer.vert");
-    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/normal.frag");
+    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/framebuffer.frag");
     std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
     shaderProgram->Build(vertexShader, fragmentShader);
 
     ShaderUniformCollection::NameSet filteredUniforms;
     filteredUniforms.insert("ProjMatrix");
     filteredUniforms.insert("InvProjMatrix");
+    //filteredUniforms.insert("ViewMatrix");
+    filteredUniforms.insert("WorldMatrix");
+    filteredUniforms.insert("ViewProjMatrix");
+    m_normalsMaterial = std::make_shared<Material>(shaderProgram, filteredUniforms);
 
-    m_framebufferMaterial = std::make_shared<Material>(shaderProgram, filteredUniforms);
-
-    //Left this here because I am unsure
-    m_framebufferMaterial->SetShaderSetupFunction([=](ShaderProgram& shaderProgram)
+    ShaderProgram::Location worldMatrixLocation = shaderProgram->GetUniformLocation("WorldMatrix");
+    ShaderProgram::Location viewProjMatrixLocation = shaderProgram->GetUniformLocation("ViewProjMatrix");
+    ShaderProgram::Location projMatrixLocation = shaderProgram->GetUniformLocation("ProjMatrix");
+    ShaderProgram::Location invProjMatrixLocation = shaderProgram->GetUniformLocation("InvProjMatrix");
+    //ShaderProgram::Location viewMatrixLocation = shaderProgram->GetUniformLocation("ViewMatrix");
+    
+    m_normalsMaterial->SetShaderSetupFunction([=](ShaderProgram& shaderProgram)
         {
-
+            //shaderProgram.SetUniform(viewMatrixLocation, m_camera.GetViewMatrix());
+            shaderProgram.SetUniform(worldMatrixLocation, glm::scale(glm::vec3(0.1f)));
+            shaderProgram.SetUniform(viewProjMatrixLocation, m_camera.GetViewProjectionMatrix());
+            shaderProgram.SetUniform(projMatrixLocation, m_camera.GetProjectionMatrix());
+            shaderProgram.SetUniform(invProjMatrixLocation, glm::inverse(m_camera.GetProjectionMatrix()));
         });
 }
+
+void ViewerApplication::CreateUVCoordsFramebufferMaterial()
+{
+    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/SSR_uv.vert");
+    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/SSR_uv.frag");
+    std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
+    shaderProgram->Build(vertexShader, fragmentShader);
+
+    ShaderUniformCollection::NameSet filteredUniforms;
+    filteredUniforms.insert("ProjMatrix");
+    filteredUniforms.insert("InvProjMatrix");
+    filteredUniforms.insert("InvViewMatrix");
+
+    m_UVCoordsMaterial = std::make_shared<Material>(shaderProgram, filteredUniforms);
+
+    // Setup function
+    ShaderProgram::Location worldMatrixLocation = shaderProgram->GetUniformLocation("WorldMatrix");
+    ShaderProgram::Location viewProjMatrixLocation = shaderProgram->GetUniformLocation("ViewProjMatrix");
+
+    ShaderProgram::Location cameraPositionLocation = shaderProgram->GetUniformLocation("CameraPosition");
+
+    ShaderProgram::Location projMatrixLocation = shaderProgram->GetUniformLocation("ProjMatrix");
+    ShaderProgram::Location invProjMatrixLocation = shaderProgram->GetUniformLocation("InvProjMatrix");
+    ShaderProgram::Location invViewMatrixLocation = shaderProgram->GetUniformLocation("InvViewMatrix");
+
+
+    m_UVCoordsMaterial->SetShaderSetupFunction([=](ShaderProgram& shaderProgram)
+        {
+            shaderProgram.SetUniform(worldMatrixLocation, glm::scale(glm::vec3(0.1f)));
+            shaderProgram.SetUniform(viewProjMatrixLocation, m_camera.GetViewProjectionMatrix());
+            shaderProgram.SetUniform(projMatrixLocation, m_camera.GetProjectionMatrix());
+            shaderProgram.SetUniform(invProjMatrixLocation, glm::inverse(m_camera.GetProjectionMatrix()));
+            // Set camera and light uniforms
+            shaderProgram.SetUniform(cameraPositionLocation, m_cameraPosition);
+            shaderProgram.SetUniform(invViewMatrixLocation, glm::inverse(m_camera.GetViewMatrix()));
+        });
+}
+
 void ViewerApplication::InitializeLights()
 {
     // Initialize light variables
@@ -286,11 +342,12 @@ void ViewerApplication::InitializeLights()
     m_lightPosition = glm::vec3(-10.0f, 20.0f, 10.0f);
 }
 
-void ViewerApplication::InitializeFrameBufferObject()
+
+void ViewerApplication::InitializeNormalsFBO()
 {
        
-    m_fbo = std::make_shared<FramebufferObject>();
-    m_fbo->Bind();
+    m_normalsFBO = std::make_shared<FramebufferObject>();
+    m_normalsFBO->Bind();
 
     m_depthTexture = std::make_shared<Texture2DObject>();
     m_depthTexture->Bind();
@@ -301,21 +358,58 @@ void ViewerApplication::InitializeFrameBufferObject()
     m_depthTexture->SetParameter(TextureObject::ParameterEnum::WrapT, GL_CLAMP_TO_EDGE);
 
     m_depthTexture->Unbind();
-    m_fbo->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Depth, *m_depthTexture);
 
-    // Create normals texture
+    m_normalsFBO->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Depth, *m_depthTexture);
 
-    m_fbo->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Color0, *m_normalTexture);
+    m_normalTexture = std::make_shared<Texture2DObject>();
+    m_normalTexture->Bind();
+    m_normalTexture->SetImage(0, 1024, 1024, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
+    m_normalTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_NEAREST);
+    m_normalTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_NEAREST);
+    m_normalTexture->SetParameter(TextureObject::ParameterEnum::WrapS, GL_CLAMP_TO_EDGE);
+    m_normalTexture->SetParameter(TextureObject::ParameterEnum::WrapT, GL_CLAMP_TO_EDGE);
+    
+    m_normalTexture->Unbind();
 
-    m_fbo->SetDrawBuffers(std::array<FramebufferObject::Attachment, 1>({ FramebufferObject::Attachment::Color0 }));
+    m_normalsFBO->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Color0, *m_normalTexture);
 
+    m_normalsFBO->SetDrawBuffers(std::array<FramebufferObject::Attachment, 1>({ FramebufferObject::Attachment::Color0 }));
+  
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cerr << "Error: Framebuffer is not complete." << std::endl;
     }
     
-    m_fbo->Unbind();
+    m_normalsFBO->Unbind();
+
+    CreateNormalsFramebufferMaterial();
 }
 
+void ViewerApplication::InitializeUVCoordsFBO()
+{
+
+    m_UVCoordsFBO = std::make_shared<FramebufferObject>();
+    m_UVCoordsFBO->Bind();
+
+    m_uvTexture = std::make_shared<Texture2DObject>();
+    m_uvTexture->Bind();
+    m_uvTexture->SetImage(0, 1024, 1024, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
+    m_uvTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_NEAREST);
+    m_uvTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_NEAREST);
+    m_uvTexture->SetParameter(TextureObject::ParameterEnum::WrapS, GL_CLAMP_TO_EDGE);
+    m_uvTexture->SetParameter(TextureObject::ParameterEnum::WrapT, GL_CLAMP_TO_EDGE);
+    m_uvTexture->Unbind();
+
+    m_UVCoordsFBO->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Color0, *m_uvTexture);
+    m_UVCoordsFBO->SetDrawBuffers(std::array<FramebufferObject::Attachment, 1>({ FramebufferObject::Attachment::Color0 }));
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << "Error: Framebuffer is not complete." << std::endl;
+    }
+
+    m_UVCoordsFBO->Unbind();
+
+    CreateUVCoordsFramebufferMaterial();
+}
 void ViewerApplication::RenderGUI()
 {
     m_imGui.BeginFrame();

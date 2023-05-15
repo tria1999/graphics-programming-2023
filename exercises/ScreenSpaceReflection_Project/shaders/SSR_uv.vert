@@ -7,20 +7,17 @@ layout (location = 2) in vec2 VertexTexCoord;
 out vec3 WorldPosition;
 out vec3 WorldNormal;
 out vec2 TexCoord;
-out vec3 ViewNormal;
 
 uniform mat4 WorldMatrix;
 uniform mat4 ViewProjMatrix;
-uniform mat4 ProjMatrix;
-uniform mat4 InvProjMatrix;
-uniform mat4 ViewMatrix;
-
+uniform float time;
 
 void main()
 {
-	//FragVertexPosition = VertexPosition;
-	ViewNormal = normalize((ViewMatrix * vec4(VertexNormal, 0.0)).xyz);
-	WorldPosition = (WorldMatrix * vec4(VertexPosition, 1.0)).xyz;
+	vec3 pos = VertexPosition;
+	pos.y += sin(pos.x + pos.z + 2*time) * 0.3; // Add a simple sine wave to the y coordinate
+	pos.x += sin(pos.y + pos.z + time) * 0.2; // ... and to the x coordinate, for effect
+	WorldPosition = (WorldMatrix * vec4(pos, 1.0)).xyz;
 	WorldNormal = normalize((WorldMatrix * vec4(VertexNormal, 0.0)).xyz);
 	TexCoord = VertexTexCoord;
 	gl_Position = ViewProjMatrix * vec4(WorldPosition, 1.0);

@@ -48,12 +48,10 @@ vec3 GetBlinnPhongReflection(vec3 objectColor, vec3 lightVector, vec3 viewVector
 
 void main()
 {
-    // Blinn-Phong part
 	vec4 objectColor = Color * texture(ColorTexture, TexCoord);
 	vec3 lightVector = normalize(LightPosition - WorldPosition);
 	vec3 viewVector = normalize(CameraPosition - WorldPosition);
 	vec3 normalVector = normalize(WorldNormal);
     FragColor = vec4(GetBlinnPhongReflection(objectColor.rgb, lightVector, viewVector, normalVector), 1.0f);
     
-    //will use normal maps later instead, so the reflection deforms with the waves
 }
