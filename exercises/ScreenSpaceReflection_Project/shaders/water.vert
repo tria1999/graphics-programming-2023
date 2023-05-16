@@ -10,11 +10,16 @@ out vec2 TexCoord;
 
 uniform mat4 WorldMatrix;
 uniform mat4 ViewProjMatrix;
+uniform float time;
 
 void main()
 {
-	WorldPosition = (WorldMatrix * vec4(VertexPosition, 1.0)).xyz;
+	vec3 pos = VertexPosition;
+	//Wave animation
+	pos.y += sin(pos.x + pos.z + 2*time) * 1.3 +2.5; // Add a simple sine wave to the y coordinate, also adjust the water surface height
 	WorldNormal = normalize((WorldMatrix * vec4(VertexNormal, 0.0)).xyz);
 	TexCoord = VertexTexCoord;
-	gl_Position = ViewProjMatrix * vec4(WorldPosition, 1.0);
+	WorldPosition = (WorldMatrix * vec4(pos, 1.0)).xyz;
+	gl_Position = ViewProjMatrix * vec4(pos, 1.0);
+
 }

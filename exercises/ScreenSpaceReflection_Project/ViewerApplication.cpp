@@ -39,6 +39,7 @@ void ViewerApplication::Initialize()
     InitializeColorFBO();
     InitializeReflectionColorFBO();
     InitializeBlurFBO();
+    CreateFinalWaterMaterial();
     InitializeModel();
     InitializeCamera();
     InitializeLights();
@@ -59,7 +60,7 @@ void ViewerApplication::Update()
     // Update specular exponent for grass material
     m_model.GetMaterial(1).SetUniformValue("SpecularExponent", m_specularExponentGrass);
     // Pass the time for the wave animation in float form
-    m_waterSurface.GetMaterial(0).SetUniformValue("time", (float)glfwGetTime());
+    m_finalWaterMaterial->SetUniformValue("time", (float)glfwGetTime());
 }
 
 void ViewerApplication::Render()
@@ -85,10 +86,13 @@ void ViewerApplication::Render()
     GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
     m_model.Draw();    
 
-
+    
+    m_finalWaterMaterial->SetUniformValue("ColorTexture", m_colorTexture);
+    m_finalWaterMaterial->SetUniformValue("ColorBlurTexture", m_blurTexture);
+    m_finalWaterMaterial->SetUniformValue("SpecularTexture", m_specularTexture);
     //Update the uniforms each frame
-    m_waterSurface.GetMaterial(0).SetUniformValue("DepthTexture",m_depthTexture);
-    m_waterSurface.GetMaterial(0).SetUniformValue("NormalTexture", m_normalTexture);
+    //m_waterSurface.GetMaterial(0).SetUniformValue("DepthTexture",m_depthTexture);
+    //m_waterSurface.GetMaterial(0).SetUniformValue("NormalTexture", m_normalTexture);
     m_waterSurface.Draw();
     
     // Render the debug user interface
@@ -126,7 +130,7 @@ void ViewerApplication::RenderIntoNormalsFBO()
 
 void ViewerApplication::RenderIntoUVCoordsFBO()
 {
-    //m_UVCoordsFBO->Bind();
+    m_UVCoordsFBO->Bind();
 
     // Clear color and depth. Yes, you also need to clear the textures. Maybe you were missing this part?
     GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
@@ -147,7 +151,7 @@ void ViewerApplication::RenderIntoUVCoordsFBO()
         // Draw the submesh
         m_waterSurface.GetMesh().DrawSubmesh(submeshIndex);
     }
-    //m_UVCoordsFBO->Unbind();
+    m_UVCoordsFBO->Unbind();
 }
 
 void ViewerApplication::RenderIntoSpecularFBO()
@@ -269,8 +273,6 @@ void ViewerApplication::InitializeModel()
     // Load and build shader
     Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/blinn-phong.vert");
     Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/blinn-phong.frag");
-    //Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/framebuffer.vert");
-    //Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/framebuffer.frag");
     std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
     shaderProgram->Build(vertexShader, fragmentShader);
 
@@ -316,7 +318,6 @@ void ViewerApplication::InitializeModel()
     loader.SetMaterialAttribute(VertexAttribute::Semantic::TexCoord0, "VertexTexCoord");
 
     // Load model
-    
 
     // Load and set textures
     Texture2DLoader textureLoader(TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
@@ -327,14 +328,14 @@ void ViewerApplication::InitializeModel()
     m_model.GetMaterial(1).SetUniformValue("ColorTexture", textureLoader.LoadShared("models/mill/Ground_color.jpg"));
     m_model.GetMaterial(2).SetUniformValue("ColorTexture", textureLoader.LoadShared("models/mill/MillCat_color.jpg"));
     
-    CreateWaterMaterial(shaderProgram, filteredUniforms);
-    ModelLoader waterLoader(m_waterMaterial);
+    //CreateWaterMaterial(shaderProgram, filteredUniforms);
+    
+
+    ModelLoader waterLoader(m_finalWaterMaterial);
 
     waterLoader.SetMaterialAttribute(VertexAttribute::Semantic::Position, "position");
     waterLoader.SetMaterialAttribute(VertexAttribute::Semantic::Normal, "VertexNormal");
     waterLoader.SetMaterialAttribute(VertexAttribute::Semantic::TexCoord0, "texCoord");
-
-    waterLoader.SetMaterialProperty(ModelLoader::MaterialProperty::NormalTexture, "NormalTexture");
 
     m_waterSurface = waterLoader.Load("models/water/water2.obj");
     std::shared_ptr<Texture2DObject> waterTexture = textureLoader.LoadShared("models/water/water.png");
@@ -344,9 +345,8 @@ void ViewerApplication::InitializeModel()
     waterTexture->SetParameter(TextureObject::ParameterEnum::WrapS, GL_REPEAT);
     waterTexture->Unbind();
     */
-    m_waterSurface.GetMaterial(0).SetUniformValue("ColorTexture", waterTexture);
-    //m_waterSurface.GetMaterial(0).SetUniformValue("DepthTexture", m_depthTexture);
-    //m_waterSurface.GetMaterial(0).SetUniformValue("NormalTexture", m_normalTexture);
+    m_waterSurface.GetMaterial(0).SetUniformValue("BaseColorTexture", waterTexture);
+
 }
 
 void ViewerApplication::InitializeCamera()
@@ -359,7 +359,7 @@ void ViewerApplication::InitializeCamera()
     m_camera.SetPerspectiveProjectionMatrix(1.0f, aspectRatio, 0.1f, 1000.0f);
 }
 
-//This is the SSR material of the project
+//Unused, should be deleted
 void ViewerApplication::CreateWaterMaterial(std::shared_ptr<ShaderProgram> shaderProgram2, ShaderUniformCollection::NameSet filteredUniforms)
 {
     Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/SSR_let.vert");
@@ -578,8 +578,8 @@ void ViewerApplication::CreateReflectionColorFramebufferMaterial()
 
 void ViewerApplication::CreateBlurFramebufferMaterial()
 {
-    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/reflectionColor.vert");
-    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/reflectionColor.frag");
+    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/blur.vert");
+    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/blur.frag");
     std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
     shaderProgram->Build(vertexShader, fragmentShader);
 
@@ -598,6 +598,54 @@ void ViewerApplication::CreateBlurFramebufferMaterial()
         {
             shaderProgram.SetUniform(worldMatrixLocation, glm::scale(glm::vec3(0.1f)));
             shaderProgram.SetUniform(viewProjMatrixLocation, m_camera.GetViewProjectionMatrix());
+        });
+}
+
+void ViewerApplication::CreateFinalWaterMaterial()
+{
+    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/water.vert");
+    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/water.frag");
+    std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
+    shaderProgram->Build(vertexShader, fragmentShader);
+
+    ShaderUniformCollection::NameSet filteredUniforms;
+    filteredUniforms.insert("WorldMatrix");
+    filteredUniforms.insert("ViewProjMatrix");
+    filteredUniforms.insert("AmbientColor");
+    filteredUniforms.insert("LightColor");
+
+    m_finalWaterMaterial = std::make_shared<Material>(shaderProgram, filteredUniforms);
+    m_finalWaterMaterial->SetUniformValue("Color", glm::vec4(1.0f));
+    m_finalWaterMaterial->SetUniformValue("AmbientReflection", 1.0f);
+    m_finalWaterMaterial->SetUniformValue("DiffuseReflection", 1.0f);
+    m_finalWaterMaterial->SetUniformValue("SpecularReflection", 1.0f);
+    m_finalWaterMaterial->SetUniformValue("SpecularExponent", 100.0f);
+    m_finalWaterMaterial->SetUniformValue("time", 0.0f);
+
+    // Setup function
+    ShaderProgram::Location worldMatrixLocation = shaderProgram->GetUniformLocation("WorldMatrix");
+    ShaderProgram::Location viewProjMatrixLocation = shaderProgram->GetUniformLocation("ViewProjMatrix");
+    ShaderProgram::Location ambientColorLocation = shaderProgram->GetUniformLocation("AmbientColor");
+    ShaderProgram::Location lightColorLocation = shaderProgram->GetUniformLocation("LightColor");
+    ShaderProgram::Location lightPositionLocation = shaderProgram->GetUniformLocation("LightPosition");
+    ShaderProgram::Location cameraPositionLocation = shaderProgram->GetUniformLocation("CameraPosition");
+
+    ShaderProgram::Location projMatrixLocation = shaderProgram->GetUniformLocation("ProjMatrix");
+    ShaderProgram::Location invProjMatrixLocation = shaderProgram->GetUniformLocation("InvProjMatrix");
+    ShaderProgram::Location invViewMatrixLocation = shaderProgram->GetUniformLocation("InvViewMatrix");
+
+    m_finalWaterMaterial->SetShaderSetupFunction([=](ShaderProgram& shaderProgram)
+        {
+            shaderProgram.SetUniform(worldMatrixLocation, glm::scale(glm::vec3(0.1f)));
+            shaderProgram.SetUniform(viewProjMatrixLocation, m_camera.GetViewProjectionMatrix());
+            shaderProgram.SetUniform(projMatrixLocation, m_camera.GetProjectionMatrix());
+            shaderProgram.SetUniform(invProjMatrixLocation, glm::inverse(m_camera.GetProjectionMatrix()));
+            // Set camera and light uniforms
+            shaderProgram.SetUniform(ambientColorLocation, m_ambientColor);
+            shaderProgram.SetUniform(lightColorLocation, m_lightColor * m_lightIntensity);
+            shaderProgram.SetUniform(lightPositionLocation, m_lightPosition);
+            shaderProgram.SetUniform(cameraPositionLocation, m_cameraPosition);
+            shaderProgram.SetUniform(invViewMatrixLocation, glm::inverse(m_camera.GetViewMatrix()));
         });
 }
 

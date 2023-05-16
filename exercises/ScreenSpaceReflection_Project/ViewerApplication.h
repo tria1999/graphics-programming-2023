@@ -37,6 +37,7 @@ private:
     void CreateColorFramebufferMaterial();
     void CreateReflectionColorFramebufferMaterial();
     void CreateBlurFramebufferMaterial();
+    void CreateFinalWaterMaterial();
     void InitializeLights();
     void InitializeNormalsFBO();
     void InitializeUVCoordsFBO();
@@ -93,7 +94,7 @@ private:
     std::shared_ptr<Material> m_reflectionColorMaterial;
     std::shared_ptr<Material> m_blurMaterial;
     std::shared_ptr<Material> m_waterMaterial;
-
+    std::shared_ptr<Material> m_finalWaterMaterial;
     // Add light variables
     glm::vec3 m_ambientColor;
     glm::vec3 m_lightColor;

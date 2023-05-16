@@ -7,7 +7,7 @@ in vec2 TexCoord;
 out vec4 FragColor;
 
 uniform vec4 Color;
-uniform sampler2D ColorTexture;
+uniform sampler2D BaseColorTexture;
 
 uniform float AmbientReflection;
 uniform float DiffuseReflection;
@@ -19,8 +19,11 @@ uniform vec3 LightColor;
 uniform vec3 LightPosition;
 uniform vec3 CameraPosition;
 
+uniform sampler2D ColorTexture;
+uniform sampler2D ColorBlurTexture;
+uniform sampler2D SpecularTexture;
 
-//Blinn-Phong 
+
 vec3 GetAmbientReflection(vec3 objectColor)
 {
 	return AmbientColor * AmbientReflection * objectColor;
@@ -44,12 +47,32 @@ vec3 GetBlinnPhongReflection(vec3 objectColor, vec3 lightVector, vec3 viewVector
 		 + GetSpecularReflection(lightVector, viewVector, normalVector);
 }
 
-void main()
-{
-	vec4 objectColor = Color * texture(ColorTexture, TexCoord);
+void main() {
+
+	//Blinn-Phong part
+	vec4 objectColor = Color * texture(BaseColorTexture, TexCoord);
 	vec3 lightVector = normalize(LightPosition - WorldPosition);
 	vec3 viewVector = normalize(CameraPosition - WorldPosition);
 	vec3 normalVector = normalize(WorldNormal);
     FragColor = vec4(GetBlinnPhongReflection(objectColor.rgb, lightVector, viewVector, normalVector), 1.0f);
-    
+
+
+	//Reflection Part
+	
+	vec2 texSize  = textureSize(ColorTexture, 0).xy;
+	vec2 texCoord = gl_FragCoord.xy / texSize;
+
+	vec4 specular     = texture(SpecularTexture,      texCoord);
+	vec4 color     = texture(ColorTexture,     texCoord);
+	vec4 colorBlur = texture(ColorBlurTexture, texCoord);
+
+	float specularAmount = dot(specular.rgb, vec3(1)) / 3;
+
+	if (specularAmount <= 0) { FragColor = vec4(0); return; }
+
+	float roughness = 1 - min(specular.a, 1);
+
+	FragColor += mix(color, colorBlur, roughness) * specularAmount;
+	
+	FragColor = normalize(FragColor);
 }
