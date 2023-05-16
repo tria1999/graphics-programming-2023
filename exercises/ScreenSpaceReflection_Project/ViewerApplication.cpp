@@ -35,10 +35,12 @@ void ViewerApplication::Initialize()
 
     InitializeNormalsFBO();
     InitializeUVCoordsFBO();
+    InitializeSpecularFBO();
+    InitializerReflectionColorFBO();
+    InitializeBlurFBO();
     InitializeModel();
     InitializeCamera();
     InitializeLights();
-    
 
     DeviceGL& device = GetDevice();
     device.EnableFeature(GL_DEPTH_TEST);
@@ -66,9 +68,13 @@ void ViewerApplication::Render()
     // Clear color and depth
     //GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
 
-    
     RenderIntoNormalsFBO();
-
+    m_UVCoordsMaterial->SetUniformValue("DepthTexture", m_depthTexture);
+    m_UVCoordsMaterial->SetUniformValue("NormalTexture", m_normalTexture);
+    //Note: UVCoords are in world space?
+    RenderIntoUVCoordsFBO();
+    RenderIntoSpecularFBO();
+    
     // Clear color and depth
     GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
     m_model.Draw();    
@@ -83,6 +89,8 @@ void ViewerApplication::Render()
     RenderGUI();
 }
 
+// I used different functions because there were errors if I used 1 functions for each case,
+// passing each FBO and material as arguments
 void ViewerApplication::RenderIntoNormalsFBO()
 {
     // FIRST PART: RENDERING THE FRAMEBUFFER
@@ -101,13 +109,120 @@ void ViewerApplication::RenderIntoNormalsFBO()
         // Draw the submesh
         m_model.GetMesh().DrawSubmesh(submeshIndex);
     }
-    /*
+    
     for (unsigned int submeshIndex = 0; submeshIndex < m_waterSurface.GetMesh().GetSubmeshCount(); ++submeshIndex)
     {
-    // Draw the submesh
-    m_waterSurface.GetMesh().DrawSubmesh(submeshIndex);
-    }*/
+        // Draw the submesh
+        m_waterSurface.GetMesh().DrawSubmesh(submeshIndex);
+    }
     m_normalsFBO->Unbind();
+}
+
+void ViewerApplication::RenderIntoUVCoordsFBO()
+{
+    //m_UVCoordsFBO->Bind();
+
+    // Clear color and depth. Yes, you also need to clear the textures. Maybe you were missing this part?
+    GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
+
+    // Draw the mill model with a different material that only outputs the normals
+
+    // Set up the normals material before rendering
+    m_UVCoordsMaterial->Use();
+    // Draw all the submeshes, one by one, all with the same material
+    for (unsigned int submeshIndex = 0; submeshIndex < m_model.GetMesh().GetSubmeshCount(); ++submeshIndex)
+    {
+        // Draw the submesh
+        m_model.GetMesh().DrawSubmesh(submeshIndex);
+    }
+
+    for (unsigned int submeshIndex = 0; submeshIndex < m_waterSurface.GetMesh().GetSubmeshCount(); ++submeshIndex)
+    {
+        // Draw the submesh
+        m_waterSurface.GetMesh().DrawSubmesh(submeshIndex);
+    }
+    //m_UVCoordsFBO->Unbind();
+}
+
+void ViewerApplication::RenderIntoSpecularFBO()
+{
+    // FIRST PART: RENDERING THE FRAMEBUFFER
+    m_specularFBO->Bind();
+
+    // Clear color and depth. Yes, you also need to clear the textures. Maybe you were missing this part?
+    GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
+
+    // Draw the mill model with a different material that only outputs the normals
+
+    // Set up the normals material before rendering
+    m_specularMaterial->Use();
+    // Draw all the submeshes, one by one, all with the same material
+    for (unsigned int submeshIndex = 0; submeshIndex < m_model.GetMesh().GetSubmeshCount(); ++submeshIndex)
+    {
+        // Draw the submesh
+        m_model.GetMesh().DrawSubmesh(submeshIndex);
+    }
+    
+    for (unsigned int submeshIndex = 0; submeshIndex < m_waterSurface.GetMesh().GetSubmeshCount(); ++submeshIndex)
+    {
+        // Draw the submesh
+        m_waterSurface.GetMesh().DrawSubmesh(submeshIndex);
+    }
+    m_specularFBO->Unbind();
+}
+
+void ViewerApplication::RenderIntoReflectionColorFBO()
+{
+    // FIRST PART: RENDERING THE FRAMEBUFFER
+    m_reflectionColorFBO->Bind();
+
+    // Clear color and depth. Yes, you also need to clear the textures. Maybe you were missing this part?
+    GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
+
+    // Draw the mill model with a different material that only outputs the normals
+
+    // Set up the normals material before rendering
+    m_reflectionColorMaterial->Use();
+    // Draw all the submeshes, one by one, all with the same material
+    for (unsigned int submeshIndex = 0; submeshIndex < m_model.GetMesh().GetSubmeshCount(); ++submeshIndex)
+    {
+        // Draw the submesh
+        m_model.GetMesh().DrawSubmesh(submeshIndex);
+    }
+
+    for (unsigned int submeshIndex = 0; submeshIndex < m_waterSurface.GetMesh().GetSubmeshCount(); ++submeshIndex)
+    {
+        // Draw the submesh
+        m_waterSurface.GetMesh().DrawSubmesh(submeshIndex);
+    }
+    m_reflectionColorFBO->Unbind();
+}
+
+void ViewerApplication::RenderIntoBlurFBO()
+{
+    // FIRST PART: RENDERING THE FRAMEBUFFER
+    m_blurFBO->Bind();
+
+    // Clear color and depth. Yes, you also need to clear the textures. Maybe you were missing this part?
+    GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
+
+    // Draw the mill model with a different material that only outputs the normals
+
+    // Set up the normals material before rendering
+    m_blurMaterial->Use();
+    // Draw all the submeshes, one by one, all with the same material
+    for (unsigned int submeshIndex = 0; submeshIndex < m_model.GetMesh().GetSubmeshCount(); ++submeshIndex)
+    {
+        // Draw the submesh
+        m_model.GetMesh().DrawSubmesh(submeshIndex);
+    }
+
+    for (unsigned int submeshIndex = 0; submeshIndex < m_waterSurface.GetMesh().GetSubmeshCount(); ++submeshIndex)
+    {
+        // Draw the submesh
+        m_waterSurface.GetMesh().DrawSubmesh(submeshIndex);
+    }
+    m_blurFBO->Unbind();
 }
 
 
@@ -136,7 +251,6 @@ void ViewerApplication::InitializeModel()
     filteredUniforms.insert("AmbientColor");
     filteredUniforms.insert("LightColor");
 
-    
     // Create reference material
     std::shared_ptr<Material> material = std::make_shared<Material>(shaderProgram, filteredUniforms);
     material->SetUniformValue("Color", glm::vec4(1.0f));
@@ -144,7 +258,6 @@ void ViewerApplication::InitializeModel()
     material->SetUniformValue("DiffuseReflection", 1.0f);
     material->SetUniformValue("SpecularReflection", 1.0f);
     material->SetUniformValue("SpecularExponent", 100.0f);
-
 
     // Setup function
     ShaderProgram::Location worldMatrixLocation = shaderProgram->GetUniformLocation("WorldMatrix");
@@ -193,7 +306,7 @@ void ViewerApplication::InitializeModel()
 
     waterLoader.SetMaterialProperty(ModelLoader::MaterialProperty::NormalTexture, "NormalTexture");
 
-    m_waterSurface = waterLoader.Load("models/water/water.obj");
+    m_waterSurface = waterLoader.Load("models/water/water2.obj");
     std::shared_ptr<Texture2DObject> waterTexture = textureLoader.LoadShared("models/water/water.png");
     /*
     waterTexture->Bind();
@@ -251,7 +364,7 @@ void ViewerApplication::CreateWaterMaterial(std::shared_ptr<ShaderProgram> shade
 
     m_waterMaterial->SetShaderSetupFunction([=](ShaderProgram& shaderProgram)
         {
-            shaderProgram.SetUniform(worldMatrixLocation, glm::translate(glm::vec3(0.f,2.f,0.f))*glm::scale(glm::vec3(5.0f)));
+            shaderProgram.SetUniform(worldMatrixLocation, glm::scale(glm::vec3(0.1f)));//glm::translate(glm::vec3(0.f,2.f,0.f))*
             shaderProgram.SetUniform(viewProjMatrixLocation, m_camera.GetViewProjectionMatrix());
             shaderProgram.SetUniform(projMatrixLocation, m_camera.GetProjectionMatrix());
             shaderProgram.SetUniform(invProjMatrixLocation, glm::inverse(m_camera.GetProjectionMatrix()));
@@ -267,8 +380,8 @@ void ViewerApplication::CreateWaterMaterial(std::shared_ptr<ShaderProgram> shade
 
 void ViewerApplication::CreateNormalsFramebufferMaterial()
 {
-    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/framebuffer.vert");
-    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/framebuffer.frag");
+    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/normal.vert");
+    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/normal.frag");
     std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
     shaderProgram->Build(vertexShader, fragmentShader);
 
@@ -330,6 +443,89 @@ void ViewerApplication::CreateUVCoordsFramebufferMaterial()
             // Set camera and light uniforms
             shaderProgram.SetUniform(cameraPositionLocation, m_cameraPosition);
             shaderProgram.SetUniform(invViewMatrixLocation, glm::inverse(m_camera.GetViewMatrix()));
+        });
+}
+
+void ViewerApplication::CreateSpecularFramebufferMaterial()
+{
+    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/specular.vert");
+    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/specular.frag");
+    std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
+    shaderProgram->Build(vertexShader, fragmentShader);
+
+    // Filter out uniforms that are not material properties
+    ShaderUniformCollection::NameSet filteredUniforms;
+    filteredUniforms.insert("WorldMatrix");
+    filteredUniforms.insert("ViewProjMatrix");
+    filteredUniforms.insert("LightColor");
+
+    m_specularMaterial = std::make_shared<Material>(shaderProgram, filteredUniforms);
+
+    m_specularMaterial->SetUniformValue("SpecularReflection", 1.0f);
+    m_specularMaterial->SetUniformValue("SpecularExponent", 100.0f);
+    // Setup function
+    ShaderProgram::Location worldMatrixLocation = shaderProgram->GetUniformLocation("WorldMatrix");
+    ShaderProgram::Location viewProjMatrixLocation = shaderProgram->GetUniformLocation("ViewProjMatrix");
+    ShaderProgram::Location lightColorLocation = shaderProgram->GetUniformLocation("LightColor");
+    ShaderProgram::Location cameraPositionLocation = shaderProgram->GetUniformLocation("CameraPosition");
+
+    m_specularMaterial->SetShaderSetupFunction([=](ShaderProgram& shaderProgram)
+    {
+        shaderProgram.SetUniform(worldMatrixLocation, glm::scale(glm::vec3(0.1f)));
+        shaderProgram.SetUniform(viewProjMatrixLocation, m_camera.GetViewProjectionMatrix());
+        // Set camera and light uniforms
+        shaderProgram.SetUniform(lightColorLocation, m_lightColor * m_lightIntensity);
+        shaderProgram.SetUniform(cameraPositionLocation, m_cameraPosition);
+    });
+}
+
+void ViewerApplication::CreateReflectionColorFramebufferMaterial()
+{
+    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/reflectionColor.vert");
+    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/reflectionColor.frag");
+    std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
+    shaderProgram->Build(vertexShader, fragmentShader);
+
+    // Filter out uniforms that are not material properties
+    ShaderUniformCollection::NameSet filteredUniforms;
+    filteredUniforms.insert("WorldMatrix");
+    filteredUniforms.insert("ViewProjMatrix");
+
+    m_specularMaterial = std::make_shared<Material>(shaderProgram, filteredUniforms);
+
+    // Setup function
+    ShaderProgram::Location worldMatrixLocation = shaderProgram->GetUniformLocation("WorldMatrix");
+    ShaderProgram::Location viewProjMatrixLocation = shaderProgram->GetUniformLocation("ViewProjMatrix");
+
+    m_specularMaterial->SetShaderSetupFunction([=](ShaderProgram& shaderProgram)
+        {
+            shaderProgram.SetUniform(worldMatrixLocation, glm::scale(glm::vec3(0.1f)));
+            shaderProgram.SetUniform(viewProjMatrixLocation, m_camera.GetViewProjectionMatrix());
+        });
+}
+
+void ViewerApplication::CreateBlurFramebufferMaterial()
+{
+    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/reflectionColor.vert");
+    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/reflectionColor.frag");
+    std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
+    shaderProgram->Build(vertexShader, fragmentShader);
+
+    // Filter out uniforms that are not material properties
+    ShaderUniformCollection::NameSet filteredUniforms;
+    filteredUniforms.insert("WorldMatrix");
+    filteredUniforms.insert("ViewProjMatrix");
+
+    m_specularMaterial = std::make_shared<Material>(shaderProgram, filteredUniforms);
+
+    // Setup function
+    ShaderProgram::Location worldMatrixLocation = shaderProgram->GetUniformLocation("WorldMatrix");
+    ShaderProgram::Location viewProjMatrixLocation = shaderProgram->GetUniformLocation("ViewProjMatrix");
+
+    m_specularMaterial->SetShaderSetupFunction([=](ShaderProgram& shaderProgram)
+        {
+            shaderProgram.SetUniform(worldMatrixLocation, glm::scale(glm::vec3(0.1f)));
+    shaderProgram.SetUniform(viewProjMatrixLocation, m_camera.GetViewProjectionMatrix());
         });
 }
 
@@ -409,6 +605,82 @@ void ViewerApplication::InitializeUVCoordsFBO()
     m_UVCoordsFBO->Unbind();
 
     CreateUVCoordsFramebufferMaterial();
+}
+void ViewerApplication::InitializeSpecularFBO()
+{
+
+    m_specularFBO = std::make_shared<FramebufferObject>();
+    m_specularFBO->Bind();
+
+    m_specularTexture = std::make_shared<Texture2DObject>();
+    m_specularTexture->Bind();
+    m_specularTexture->SetImage(0, 1024, 1024, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
+    m_specularTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_NEAREST);
+    m_specularTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_NEAREST);
+    m_specularTexture->SetParameter(TextureObject::ParameterEnum::WrapS, GL_CLAMP_TO_EDGE);
+    m_specularTexture->SetParameter(TextureObject::ParameterEnum::WrapT, GL_CLAMP_TO_EDGE);
+    m_specularTexture->Unbind();
+
+    m_specularFBO->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Color0, *m_specularTexture);
+    m_specularFBO->SetDrawBuffers(std::array<FramebufferObject::Attachment, 1>({ FramebufferObject::Attachment::Color0 }));
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << "Error: Framebuffer is not complete." << std::endl;
+    }
+
+    m_specularFBO->Unbind();
+
+    CreateSpecularFramebufferMaterial();
+}
+void ViewerApplication::InitializerReflectionColorFBO()
+{
+    m_reflectionColorFBO = std::make_shared<FramebufferObject>();
+    m_reflectionColorFBO->Bind();
+
+    m_reflectionColorTexture = std::make_shared<Texture2DObject>();
+    m_reflectionColorTexture->Bind();
+    m_reflectionColorTexture->SetImage(0, 1024, 1024, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
+    m_reflectionColorTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_NEAREST);
+    m_reflectionColorTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_NEAREST);
+    m_reflectionColorTexture->SetParameter(TextureObject::ParameterEnum::WrapS, GL_CLAMP_TO_EDGE);
+    m_reflectionColorTexture->SetParameter(TextureObject::ParameterEnum::WrapT, GL_CLAMP_TO_EDGE);
+    m_reflectionColorTexture->Unbind();
+
+    m_reflectionColorFBO->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Color0, *m_reflectionColorTexture);
+    m_reflectionColorFBO->SetDrawBuffers(std::array<FramebufferObject::Attachment, 1>({ FramebufferObject::Attachment::Color0 }));
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << "Error: Framebuffer is not complete." << std::endl;
+    }
+
+    m_reflectionColorFBO->Unbind();
+
+    CreateReflectionColorFramebufferMaterial();
+}
+void ViewerApplication::InitializeBlurFBO()
+{
+    m_blurFBO = std::make_shared<FramebufferObject>();
+    m_blurFBO->Bind();
+
+    m_blurTexture = std::make_shared<Texture2DObject>();
+    m_blurTexture->Bind();
+    m_blurTexture->SetImage(0, 1024, 1024, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
+    m_blurTexture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_NEAREST);
+    m_blurTexture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_NEAREST);
+    m_blurTexture->SetParameter(TextureObject::ParameterEnum::WrapS, GL_CLAMP_TO_EDGE);
+    m_blurTexture->SetParameter(TextureObject::ParameterEnum::WrapT, GL_CLAMP_TO_EDGE);
+    m_blurTexture->Unbind();
+
+    m_blurFBO->SetTexture(FramebufferObject::Target::Draw, FramebufferObject::Attachment::Color0, *m_blurTexture);
+    m_blurFBO->SetDrawBuffers(std::array<FramebufferObject::Attachment, 1>({ FramebufferObject::Attachment::Color0 }));
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cerr << "Error: Framebuffer is not complete." << std::endl;
+    }
+
+    m_blurFBO->Unbind();
+
+    CreateBlurFramebufferMaterial();
 }
 void ViewerApplication::RenderGUI()
 {

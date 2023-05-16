@@ -18,8 +18,8 @@ uniform float time;
 void main()
 {
 	vec3 pos = VertexPosition;
-	pos.y += sin(pos.x + pos.z + 2*time) * 0.3; // Add a simple sine wave to the y coordinate
-	pos.x += sin(pos.y + pos.z + time) * 0.2; // ... and to the x coordinate, for effect
+	pos.y += sin(pos.x + pos.z + 2*time) * 15.0; // Add a simple sine wave to the y coordinate
+	//pos.x += sin(pos.y + pos.z + time/50) * 10.0; // ... and to the x coordinate, for effect
 	WorldPosition = (WorldMatrix * vec4(pos, 1.0)).xyz;
 	WorldNormal = normalize((WorldMatrix * vec4(VertexNormal, 0.0)).xyz);
 	TexCoord = VertexTexCoord;
