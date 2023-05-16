@@ -7,7 +7,6 @@ in vec3 ViewNormal;
 
 out vec4 FragColor;
 
-
 void main()
 {
 	vec3 normalVector = normalize(ViewNormal);

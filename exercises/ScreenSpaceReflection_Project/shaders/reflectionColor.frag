@@ -16,21 +16,22 @@ void main() {
   vec4 uv = texture(UVTexture, texCoord);
 
   // Removes holes in the UV map.
-  if (uv.b <= 0.0) {
-          uv    = vec4(0.0);
+  if (uv.b <= 0.0) 
+  {
+    uv = vec4(0.0);
     float count = 0.0;
 
     for (int i = -size; i <= size; ++i) {
-      for (int j = -size; j <= size; ++j) {
-        uv    += texture
+        for (int j = -size; j <= size; ++j) {
+            uv    += texture
                   ( UVTexture
                   , ( (vec2(i, j) * separation)
                     + gl_FragCoord.xy
                     )
                     / texSize
                   );
-        count += 1.0;
-      }
+            count += 1.0;
+        }
     }
 
     uv.xyz /= count;

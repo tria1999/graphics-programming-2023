@@ -2,11 +2,9 @@
 
 in vec3 WorldPosition;
 in vec3 WorldNormal;
-in vec2 TexCoord;
 
 out vec4 FragColor;
 
-uniform sampler2D ColorTexture;
 uniform sampler2D NormalTexture;
 uniform sampler2D DepthTexture;
 
@@ -212,15 +210,13 @@ void SSR()
   
   FragColor = uv;
 
-  vec3 uvTemp = WorldToScreen(uv.xyz);
-  FragColor.xyz = uvTemp;
+  //vec3 uvTemp = WorldToScreen(uv.xyz);
+  //FragColor.xyz = uvTemp;
 
 }
 
 void main()
 {
-    //will use normal maps later instead, so the reflection deforms with the waves
-
-    //Raymarching Part
+    //may use normal maps later instead, so the reflection deforms with the waves
     SSR();
 }
