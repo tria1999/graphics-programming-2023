@@ -1,7 +1,7 @@
 #version 330 core
 
 uniform sampler2D ColorTexture;
-uniform vec2 parameters;
+uniform vec2 Parameters;
 
 out vec4 FragColor;
 
@@ -12,10 +12,10 @@ void main() {
 
   FragColor = texture(ColorTexture, texCoord);
 
-  int size = int(parameters.x);
+  int size = int(Parameters.x);
   if (size <= 0) { return; }
 
-  float separation = parameters.y;
+  float separation = Parameters.y;
         separation = max(separation, 1);
 
   FragColor.rgb = vec3(0);

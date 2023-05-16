@@ -21,6 +21,7 @@ protected:
     void RenderIntoNormalsFBO();
     void RenderIntoUVCoordsFBO();
     void RenderIntoSpecularFBO();
+    void RenderIntoColorFBO();
     void RenderIntoReflectionColorFBO();
     void RenderIntoBlurFBO();
     void Cleanup() override;
@@ -33,13 +34,15 @@ private:
     void CreateNormalsFramebufferMaterial();
     void CreateUVCoordsFramebufferMaterial();
     void CreateSpecularFramebufferMaterial();
+    void CreateColorFramebufferMaterial();
     void CreateReflectionColorFramebufferMaterial();
     void CreateBlurFramebufferMaterial();
     void InitializeLights();
     void InitializeNormalsFBO();
     void InitializeUVCoordsFBO();
     void InitializeSpecularFBO();
-    void InitializerReflectionColorFBO();
+    void InitializeColorFBO();
+    void InitializeReflectionColorFBO();
     void InitializeBlurFBO();
 
     void UpdateCamera();
@@ -69,6 +72,7 @@ private:
     std::shared_ptr<FramebufferObject> m_normalsFBO;
     std::shared_ptr<FramebufferObject> m_UVCoordsFBO;
     std::shared_ptr<FramebufferObject> m_specularFBO;
+    std::shared_ptr<FramebufferObject> m_colorFBO;
     std::shared_ptr<FramebufferObject> m_reflectionColorFBO;
     std::shared_ptr<FramebufferObject> m_blurFBO;
     //finally, render to screen
@@ -77,6 +81,7 @@ private:
     std::shared_ptr<Texture2DObject> m_normalTexture;
     std::shared_ptr<Texture2DObject> m_uvTexture;
     std::shared_ptr<Texture2DObject> m_specularTexture;
+    std::shared_ptr<Texture2DObject> m_colorTexture;
     std::shared_ptr<Texture2DObject> m_reflectionColorTexture;
     std::shared_ptr<Texture2DObject> m_blurTexture;
     // will probably need the water texture too
@@ -84,6 +89,7 @@ private:
     std::shared_ptr<Material> m_normalsMaterial;
     std::shared_ptr<Material> m_UVCoordsMaterial;
     std::shared_ptr<Material> m_specularMaterial;
+    std::shared_ptr<Material> m_colorMaterial;
     std::shared_ptr<Material> m_reflectionColorMaterial;
     std::shared_ptr<Material> m_blurMaterial;
     std::shared_ptr<Material> m_waterMaterial;
