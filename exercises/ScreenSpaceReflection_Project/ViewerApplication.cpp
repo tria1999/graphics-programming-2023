@@ -359,55 +359,6 @@ void ViewerApplication::InitializeCamera()
     m_camera.SetPerspectiveProjectionMatrix(1.0f, aspectRatio, 0.1f, 1000.0f);
 }
 
-//Unused, should be deleted
-void ViewerApplication::CreateWaterMaterial(std::shared_ptr<ShaderProgram> shaderProgram2, ShaderUniformCollection::NameSet filteredUniforms)
-{
-    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/SSR_let.vert");
-    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/SSR_let.frag");
-    std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
-    shaderProgram->Build(vertexShader, fragmentShader);
-
-    filteredUniforms.insert("ProjMatrix");
-    filteredUniforms.insert("InvProjMatrix");
-    filteredUniforms.insert("InvViewMatrix");
-
-    m_waterMaterial = std::make_shared<Material>(shaderProgram, filteredUniforms);
-    m_waterMaterial->SetUniformValue("Color", glm::vec4(1.0f));
-    m_waterMaterial->SetUniformValue("AmbientReflection", 1.0f);
-    m_waterMaterial->SetUniformValue("DiffuseReflection", 1.0f);
-    m_waterMaterial->SetUniformValue("SpecularReflection", 1.0f);
-    m_waterMaterial->SetUniformValue("SpecularExponent", 100.0f);
-    m_waterMaterial->SetUniformValue("time", 0.0f);
-
-    // Setup function
-    ShaderProgram::Location worldMatrixLocation = shaderProgram->GetUniformLocation("WorldMatrix");
-    ShaderProgram::Location viewProjMatrixLocation = shaderProgram->GetUniformLocation("ViewProjMatrix");
-    ShaderProgram::Location ambientColorLocation = shaderProgram->GetUniformLocation("AmbientColor");
-    ShaderProgram::Location lightColorLocation = shaderProgram->GetUniformLocation("LightColor");
-    ShaderProgram::Location lightPositionLocation = shaderProgram->GetUniformLocation("LightPosition");
-    ShaderProgram::Location cameraPositionLocation = shaderProgram->GetUniformLocation("CameraPosition");
-
-    ShaderProgram::Location projMatrixLocation = shaderProgram->GetUniformLocation("ProjMatrix");
-    ShaderProgram::Location invProjMatrixLocation = shaderProgram->GetUniformLocation("InvProjMatrix");
-    ShaderProgram::Location invViewMatrixLocation = shaderProgram->GetUniformLocation("InvViewMatrix");
-    //ShaderProgram::Location depthTextureLocation = shaderProgram->GetUniformLocation("DepthTexture");
-
-    m_waterMaterial->SetShaderSetupFunction([=](ShaderProgram& shaderProgram)
-        {
-            shaderProgram.SetUniform(worldMatrixLocation, glm::scale(glm::vec3(0.1f)));//glm::translate(glm::vec3(0.f,2.f,0.f))*
-            shaderProgram.SetUniform(viewProjMatrixLocation, m_camera.GetViewProjectionMatrix());
-            shaderProgram.SetUniform(projMatrixLocation, m_camera.GetProjectionMatrix());
-            shaderProgram.SetUniform(invProjMatrixLocation, glm::inverse(m_camera.GetProjectionMatrix()));
-            // Set camera and light uniforms
-            shaderProgram.SetUniform(ambientColorLocation, m_ambientColor);
-            shaderProgram.SetUniform(lightColorLocation, m_lightColor * m_lightIntensity);
-            shaderProgram.SetUniform(lightPositionLocation, m_lightPosition);
-            shaderProgram.SetUniform(cameraPositionLocation, m_cameraPosition);
-            shaderProgram.SetUniform(invViewMatrixLocation, glm::inverse(m_camera.GetViewMatrix()));
-            //shaderProgram.SetUniform(depthTextureLocation, *m_depthTexture);
-        });
-}
-
 void ViewerApplication::CreateNormalsFramebufferMaterial()
 {
     Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/normal.vert");
@@ -618,7 +569,7 @@ void ViewerApplication::CreateFinalWaterMaterial()
     m_finalWaterMaterial->SetUniformValue("Color", glm::vec4(1.0f));
     m_finalWaterMaterial->SetUniformValue("AmbientReflection", 1.0f);
     m_finalWaterMaterial->SetUniformValue("DiffuseReflection", 1.0f);
-    m_finalWaterMaterial->SetUniformValue("SpecularReflection", 1.0f);
+    m_finalWaterMaterial->SetUniformValue("SpecularReflection", 10.0f);
     m_finalWaterMaterial->SetUniformValue("SpecularExponent", 100.0f);
     m_finalWaterMaterial->SetUniformValue("time", 0.0f);
 
@@ -645,7 +596,6 @@ void ViewerApplication::CreateFinalWaterMaterial()
             shaderProgram.SetUniform(lightColorLocation, m_lightColor * m_lightIntensity);
             shaderProgram.SetUniform(lightPositionLocation, m_lightPosition);
             shaderProgram.SetUniform(cameraPositionLocation, m_cameraPosition);
-            shaderProgram.SetUniform(invViewMatrixLocation, glm::inverse(m_camera.GetViewMatrix()));
         });
 }
 
@@ -657,7 +607,6 @@ void ViewerApplication::InitializeLights()
     m_lightIntensity = 1.0f;
     m_lightPosition = glm::vec3(-10.0f, 20.0f, 10.0f);
 }
-
 
 void ViewerApplication::InitializeNormalsFBO()
 {

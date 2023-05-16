@@ -30,7 +30,6 @@ private:
     void InitializeModel();
     void InitializeCamera();
 
-    void CreateWaterMaterial(std::shared_ptr<ShaderProgram> shaderProgram, ShaderUniformCollection::NameSet filteredUniforms);
     void CreateNormalsFramebufferMaterial();
     void CreateUVCoordsFramebufferMaterial();
     void CreateSpecularFramebufferMaterial();

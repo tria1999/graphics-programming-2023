@@ -210,12 +210,10 @@ void SSR()
 
   uv.ba = vec2(visibility);
   
-//FragColor = vec4(WorldToScreen(WorldNormal),1);
-   FragColor = uv;
-  //if(texture(DepthTexture, texCoord)==vec4(0.f,0.f,0.f,1.f))
-    //FragColor = vec4(0.0,0.0,1.0,1.0);
-  //if(texture(NormalTexture, texCoord)==vec4(0.f,0.f,0.f,1.f))
-    //FragColor = vec4(0.0,1.0,0.0,1.0);
+  FragColor = uv;
+
+  vec3 uvTemp = WorldToScreen(uv.xyz);
+  FragColor.xyz = uvTemp;
 
 }
 

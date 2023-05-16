@@ -62,17 +62,26 @@ void main() {
 	vec2 texSize  = textureSize(ColorTexture, 0).xy;
 	vec2 texCoord = gl_FragCoord.xy / texSize;
 
-	vec4 specular     = texture(SpecularTexture,      texCoord);
+	vec4 specular  = texture(SpecularTexture,  texCoord);
 	vec4 color     = texture(ColorTexture,     texCoord);
 	vec4 colorBlur = texture(ColorBlurTexture, texCoord);
 
 	float specularAmount = dot(specular.rgb, vec3(1)) / 3;
 
-	if (specularAmount <= 0) { FragColor = vec4(0); return; }
+	if (specularAmount <= 0) { 
+	/*
+	FragColor = vec4(0);
+	if(specular == vec4(0,0,0,1))
+		FragColor = vec4(1,0,0,1);
+
+	return; */
+	specularAmount = 0.5;
+	}
 
 	float roughness = 1 - min(specular.a, 1);
-
+	roughness = 0;
 	FragColor += mix(color, colorBlur, roughness) * specularAmount;
 	
-	FragColor = normalize(FragColor);
+	
+
 }
