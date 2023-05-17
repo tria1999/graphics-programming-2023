@@ -1,12 +1,10 @@
 #version 330 core
 
-in vec3 WorldPosition;
-in vec3 WorldNormal;
-
 out vec4 FragColor;
 
 uniform sampler2D NormalTexture;
 uniform sampler2D DepthTexture;
+uniform sampler2D PositionTexture;
 
 uniform mat4 ProjMatrix; //lensProjection
 uniform mat4 InvProjMatrix;
@@ -49,9 +47,9 @@ void SSR()
     int   steps       = 10;
     float thickness   = 0.5;
     //this is supposed to be the position texture, look back later
-    vec2 texSize  = textureSize(DepthTexture, 0).xy; 
+    vec2 texSize  = textureSize(PositionTexture, 0).xy; 
     vec2 texCoord = gl_FragCoord.xy / texSize;
-  
+  /*
     //Depth reconcstruction
     //vec4 ndc = vec4(texCoord * 2.0 - 1.0, texture(DepthTexture, texCoord).r * 2.0 - 1.0, 1.0);
     //vec4 viewPos = InvProjMatrix * ndc;
@@ -61,14 +59,11 @@ void SSR()
     viewPos /= viewPos.w;
     vec4 worldPos = InvViewMatrix * viewPos;
     //vec3 position = worldPos.xyz;
-
-    vec4 positionFrom     = worldPos;
-    //vec4 positionFrom = vec4(WorldPosition,1.0f);
-    //vec4 positionFrom     = vec4(WorldToScreen(WorldPosition),1.0f);//convert from world to sceen coords
+    */
+    vec4 positionFrom     = texture(PositionTexture, texCoord);
     vec3 unitPositionFrom = normalize(positionFrom.xyz);
     vec3 sceenNormal      = normalize(texture(NormalTexture, texCoord).xyz);
-    //vec3 sceenNormal      = WorldToScreen(WorldNormal);
-    
+
     vec3 reflectionRay    = normalize(reflect(unitPositionFrom, sceenNormal));
     
     vec4 positionTo = positionFrom;
@@ -112,21 +107,26 @@ void SSR()
 
     int hit0 = 0;
     int hit1 = 0;
+
     float viewDistance = startView.z;
     float depth        = thickness;
 
     int i=0;
 
     for (i = 0; i < int(delta); ++i) {
+        //Advance the current fragment position closer to the end fragment. 
+        //Use this new fragment position to look up a scene position stored in the position framebuffer texture.
         frag      += increment;
         uv.xy      = frag / texSize;
-        //positionTo = texture(DepthTexture, uv.xy);
         
+        /*
         vec4 viewPosTo = ReconstructViewPosition(DepthTexture,uv.xy,InvProjMatrix);
         //account for perspective
         viewPosTo /= viewPosTo.w;
         vec4 worldPosTo = InvViewMatrix * viewPosTo;
         positionTo = worldPosTo;
+        */
+        positionTo = texture(PositionTexture, uv.xy);
 
      search1 =
       mix
@@ -156,13 +156,14 @@ void SSR()
     frag       = mix(startFrag.xy, endFrag.xy, search1);
     uv.xy      = frag / texSize;
 
+    /*
     vec4 viewPosTo = ReconstructViewPosition(DepthTexture,uv.xy,InvProjMatrix);
     //account for perspective
     viewPosTo /= viewPosTo.w;
     vec4 worldPosTo = InvViewMatrix * viewPosTo;
-
-    positionTo = worldPosTo;
-    //positionTo = texture(DepthTexture, uv.xy);
+    
+    positionTo = worldPosTo;*/
+    positionTo = texture(PositionTexture, uv.xy);
 
     viewDistance = (startView.y * endView.y) / mix(endView.y, startView.y, search1);
     depth        = viewDistance - positionTo.y;
@@ -209,10 +210,6 @@ void SSR()
   uv.ba = vec2(visibility);
   
   FragColor = uv;
-
-  //vec3 uvTemp = WorldToScreen(uv.xyz);
-  //FragColor.xyz = uvTemp;
-
 }
 
 void main()

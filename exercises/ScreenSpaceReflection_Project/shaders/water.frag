@@ -69,13 +69,18 @@ void main() {
 	float specularAmount = dot(specular.rgb, vec3(1)) / 3;
 
 	if (specularAmount <= 0) { 
+	
 	/*
 	FragColor = vec4(0);
 	if(specular == vec4(0,0,0,1))
 		FragColor = vec4(1,0,0,1);
-
-	return; */
-	specularAmount = 0.5;
+	if(color == vec4(0,0,0,1))
+		FragColor = vec4(0,1,0,1);
+	if(colorBlur == vec4(0,0,0,1))
+		FragColor = vec4(0,0,1,1);
+	//return; 
+	*/
+	specularAmount = 0.01;
 	}
 
 	float roughness = 1 - min(specular.a, 1);

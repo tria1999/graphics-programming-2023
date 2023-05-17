@@ -2,7 +2,6 @@
 
 in vec3 WorldPosition;
 in vec3 WorldNormal;
-in vec2 TexCoord;
 in vec3 ViewNormal;
 
 out vec4 FragColor;

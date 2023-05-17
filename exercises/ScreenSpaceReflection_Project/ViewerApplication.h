@@ -17,7 +17,8 @@ public:
 protected:
     void Initialize() override;
     void Update() override;
-    void Render() override;
+    void Render() override; 
+    void RenderIntoPositionFBO();
     void RenderIntoNormalsFBO();
     void RenderIntoUVCoordsFBO();
     void RenderIntoSpecularFBO();
@@ -29,7 +30,7 @@ protected:
 private:
     void InitializeModel();
     void InitializeCamera();
-
+    void CreatePositionFramebufferMaterial();
     void CreateNormalsFramebufferMaterial();
     void CreateUVCoordsFramebufferMaterial();
     void CreateSpecularFramebufferMaterial();
@@ -38,6 +39,7 @@ private:
     void CreateBlurFramebufferMaterial();
     void CreateFinalWaterMaterial();
     void InitializeLights();
+    void InitializePositionFBO();
     void InitializeNormalsFBO();
     void InitializeUVCoordsFBO();
     void InitializeSpecularFBO();
@@ -69,6 +71,7 @@ private:
     Model m_model;
     Model m_waterSurface;
 
+    std::shared_ptr<FramebufferObject> m_positionFBO;
     std::shared_ptr<FramebufferObject> m_normalsFBO;
     std::shared_ptr<FramebufferObject> m_UVCoordsFBO;
     std::shared_ptr<FramebufferObject> m_specularFBO;
@@ -77,6 +80,7 @@ private:
     std::shared_ptr<FramebufferObject> m_blurFBO;
     //finally, render to screen
 
+    std::shared_ptr<Texture2DObject> m_positionTexture;
     std::shared_ptr<Texture2DObject> m_depthTexture;
     std::shared_ptr<Texture2DObject> m_normalTexture;
     std::shared_ptr<Texture2DObject> m_uvTexture;
@@ -86,6 +90,7 @@ private:
     std::shared_ptr<Texture2DObject> m_blurTexture;
     // will probably need the water texture too
 
+    std::shared_ptr<Material> m_positionMaterial;
     std::shared_ptr<Material> m_normalsMaterial;
     std::shared_ptr<Material> m_UVCoordsMaterial;
     std::shared_ptr<Material> m_specularMaterial;
