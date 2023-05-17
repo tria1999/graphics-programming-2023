@@ -12,33 +12,6 @@ uniform mat4 ViewProjMatrix;
 uniform mat4 InvViewMatrix;
 
 
-//Raymarching
-
-//Convert world position to sceen position
-vec3 WorldToScreen (vec3 world)
-    {
-        float s[4];
-        s[0] = ( world.x * ViewProjMatrix[0][0] ) + ( world.y * ViewProjMatrix[1][0] ) + ( world.z * ViewProjMatrix[2][0]) + ViewProjMatrix[3][0];
-        s[1] = ( world.x * ViewProjMatrix[0][1] ) + ( world.y * ViewProjMatrix[1][1] ) + ( world.z * ViewProjMatrix[2][1]) + ViewProjMatrix[3][1];
-        s[2] = ( world.x * ViewProjMatrix[0][2] ) + ( world.y * ViewProjMatrix[1][2] ) + ( world.z * ViewProjMatrix[2][2]) + ViewProjMatrix[3][2];
-        s[3] = ( world.x * ViewProjMatrix[0][3] ) + ( world.y * ViewProjMatrix[1][3] ) + ( world.z * ViewProjMatrix[2][3]) + ViewProjMatrix[3][3];   
-
-        vec3 screen;
-        screen[0] = s[0] / s[3] * 1024/2 + 1024/2;
-        screen[1] = s[1] / s[3] * 1024/2 + 1024/2;
-        screen[2] = s[2] / s[3];
-
-        return normalize(screen);
-    }
-
-vec4 ReconstructViewPosition(sampler2D depthTexture, vec2 texCoord, mat4 invProjMatrix)
-{
-	// Reconstruct the position, using the screen texture coordinates and the depth
-	float depth = texture(depthTexture, texCoord).r;
-	vec3 clipPosition = vec3(texCoord, depth) * 2.0f - vec3(1.0f);
-	vec4 viewPosition = invProjMatrix * vec4(clipPosition, 1.0f);
-	return viewPosition;
-}
 
 void SSR()
 {
@@ -46,20 +19,10 @@ void SSR()
     float resolution  = 0.3;
     int   steps       = 10;
     float thickness   = 0.5;
-    //this is supposed to be the position texture, look back later
+
     vec2 texSize  = textureSize(PositionTexture, 0).xy; 
     vec2 texCoord = gl_FragCoord.xy / texSize;
-  /*
-    //Depth reconcstruction
-    //vec4 ndc = vec4(texCoord * 2.0 - 1.0, texture(DepthTexture, texCoord).r * 2.0 - 1.0, 1.0);
-    //vec4 viewPos = InvProjMatrix * ndc;
-    //
-    vec4 viewPos = ReconstructViewPosition(DepthTexture,texCoord,InvProjMatrix);
-    //account for perspective
-    viewPos /= viewPos.w;
-    vec4 worldPos = InvViewMatrix * viewPos;
-    //vec3 position = worldPos.xyz;
-    */
+
     vec4 positionFrom     = texture(PositionTexture, texCoord);
     vec3 unitPositionFrom = normalize(positionFrom.xyz);
     vec3 sceenNormal      = normalize(texture(NormalTexture, texCoord).xyz);
@@ -119,13 +82,6 @@ void SSR()
         frag      += increment;
         uv.xy      = frag / texSize;
         
-        /*
-        vec4 viewPosTo = ReconstructViewPosition(DepthTexture,uv.xy,InvProjMatrix);
-        //account for perspective
-        viewPosTo /= viewPosTo.w;
-        vec4 worldPosTo = InvViewMatrix * viewPosTo;
-        positionTo = worldPosTo;
-        */
         positionTo = texture(PositionTexture, uv.xy);
 
      search1 =
@@ -156,13 +112,6 @@ void SSR()
     frag       = mix(startFrag.xy, endFrag.xy, search1);
     uv.xy      = frag / texSize;
 
-    /*
-    vec4 viewPosTo = ReconstructViewPosition(DepthTexture,uv.xy,InvProjMatrix);
-    //account for perspective
-    viewPosTo /= viewPosTo.w;
-    vec4 worldPosTo = InvViewMatrix * viewPosTo;
-    
-    positionTo = worldPosTo;*/
     positionTo = texture(PositionTexture, uv.xy);
 
     viewDistance = (startView.y * endView.y) / mix(endView.y, startView.y, search1);
@@ -214,6 +163,5 @@ void SSR()
 
 void main()
 {
-    //may use normal maps later instead, so the reflection deforms with the waves
     SSR();
 }
