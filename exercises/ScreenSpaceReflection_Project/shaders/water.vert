@@ -16,7 +16,7 @@ void main()
 {
 	vec3 pos = VertexPosition;
 	//Wave animation
-	pos.y += sin(pos.x + pos.z + 2*time) * 1.3 +2.5; // Add a simple sine wave to the y coordinate, also adjust the water surface height
+	pos.y += sin(pos.x + pos.z + 2*time) * 7 +30; // Add a simple sine wave to the y coordinate, also adjust the water surface height
 	WorldNormal = normalize((WorldMatrix * vec4(VertexNormal, 0.0)).xyz);
 	TexCoord = VertexTexCoord;
 	WorldPosition = (WorldMatrix * vec4(pos, 1.0)).xyz;

@@ -80,11 +80,11 @@ void main() {
 		FragColor = vec4(0,0,1,1);
 	//return; 
 	*/
-	specularAmount = 0.01;
+	specularAmount = 0.9;
 	}
 
 	float roughness = 1 - min(specular.a, 1);
-	roughness = 0;
+	roughness = 0.8;
 	FragColor += mix(color, colorBlur, roughness) * specularAmount;
 	
 	

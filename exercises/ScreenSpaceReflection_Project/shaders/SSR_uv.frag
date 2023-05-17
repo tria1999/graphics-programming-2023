@@ -15,9 +15,9 @@ uniform mat4 InvViewMatrix;
 
 void SSR()
 {
-    float maxDistance = 15;
-    float resolution  = 0.3;
-    int   steps       = 10;
+    float maxDistance = 1500;
+    float resolution  = 0.9;
+    int   steps       = 1000;
     float thickness   = 0.5;
 
     vec2 texSize  = textureSize(PositionTexture, 0).xy; 
@@ -76,7 +76,8 @@ void SSR()
 
     int i=0;
 
-    for (i = 0; i < int(delta); ++i) {
+    for (i = 0; i < int(delta); ++i) 
+    {
         //Advance the current fragment position closer to the end fragment. 
         //Use this new fragment position to look up a scene position stored in the position framebuffer texture.
         frag      += increment;
